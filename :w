@@ -1,0 +1,43 @@
+use self::{insert_action_builder::InsertActionBuilder, where_action_builder::QueryActionBuilder};
+
+mod insert_action_builder;
+mod query;
+mod where_action_builder;
+
+trait FromTable {
+    fn from_table(&mut self, table: impl Into<String>) -> &Self;
+}
+
+#[derive(Default)]
+pub struct QueryBuilder {}
+
+impl QueryBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn from_table(&mut self, table: impl Into<String>) -> &Self {
+        self.table = table.into();
+        self
+    }
+
+    pub fn select(&self) -> QueryActionBuilder {
+        QueryActionBuilder {
+            table: self.table.to_owned(),
+            all: false,
+            fields: vec![],
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::QueryBuilder;
+
+    #[test]
+    fn test() {
+        let mut builder = QueryBuilder::new();
+
+        builder.from_table("manga").select().all_fields();
+    }
+}
