@@ -47,38 +47,12 @@ where
     LIKE(String, String),
 }
 
-// impl<T> Clone for WhereCondition<T>
-// where
-//     T: Clone,
-// {
-//     fn clone(&self) -> Self {
-//         match self {
-//             WhereCondition::NATIVE(s) => WhereCondition::NATIVE(s.clone()),
-//             WhereCondition::NULL(s) => WhereCondition::NULL(s.clone()),
-//             WhereCondition::NOTNULL(s) => WhereCondition::NOTNULL(s.clone()),
-//             WhereCondition::AND(box1, box2) => WhereCondition::AND(box1.clone(), box2.clone()),
-//             WhereCondition::OR(box1, box2) => WhereCondition::OR(box1.clone(), box2.clone()),
-//             WhereCondition::IN(s, vec) => WhereCondition::IN(s.clone(), vec.clone()),
-//             WhereCondition::NOTIN(s, vec) => WhereCondition::NOTIN(s.clone(), vec.clone()),
-//             WhereCondition::EQ(s, t) => WhereCondition::EQ(s.clone(), t.clone()),
-//             WhereCondition::NEQ(s, t) => WhereCondition::NEQ(s.clone(), t.clone()),
-//             WhereCondition::BETWEEN(s, t1, t2) => {
-//                 WhereCondition::BETWEEN(s.clone(), t1.clone(), t2.clone())
-//             }
-//             WhereCondition::GT(s, t) => WhereCondition::GT(s.clone(), t.clone()),
-//             WhereCondition::GTE(s, t) => WhereCondition::GTE(s.clone(), t.clone()),
-//             WhereCondition::LT(s, t) => WhereCondition::LT(s.clone(), t.clone()),
-//             WhereCondition::LE(s, t) => WhereCondition::LE(s.clone(), t.clone()),
-//             WhereCondition::LIKE(s1, s2) => WhereCondition::LIKE(s1.clone(), s2.clone()),
-//         }
-//     }
-// }
 impl<T> QueryActionBuilder<T>
 where
-    T: Sized + Clone,
+    T: Sized + Clone + Debug + Display,
 {
     // TODO: fix this function is just a boilerplate for build function
-    pub fn dummy_build(&self) -> String
+    fn build_conditions(&self) -> String
     where
         T: Clone + Sized + Display + Debug,
     {
@@ -128,28 +102,25 @@ where
     pub fn new() -> Self {
         Self::default()
     }
-    //
-    // pub fn fields(&mut self, fields: &[&str]) -> &Self {
-    //     if self.all {
-    //         // TODO: throw error
-    //     }
-    //
-    //     self.fields = fields
-    //         .iter()
-    //         .map(|f| f.to_string())
-    //         .collect::<Vec<String>>();
-    //     self
-    // }
-    //
-    // pub fn from_table(&mut self, table: impl Into<String>) -> &Self {
-    //     self.table = table.into();
-    //     self
-    // }
+
+    pub fn fields(&mut self, fields: &[&str]) -> &Self {
+        if self.all {
+            // TODO: throw error
+        }
+
+        self.fields = fields
+            .iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>();
+        self
+    }
+
+    pub fn from_table(&mut self, table: impl Into<String>) -> &Self {
+        self.table = table.into();
+        self
+    }
 
     pub fn or_where(&mut self, condition: WhereCondition<T>) -> &Self {
-        if self.conditions.is_none() {
-            // TODO: handle error
-        }
         self.conditions = Some(WhereCondition::OR(
             Box::new(self.conditions.as_ref().unwrap().clone()),
             Box::new(condition),
@@ -173,13 +144,34 @@ where
         }
     }
 
-    // pub fn all_fields(&mut self) -> &Self {
-    //     if self.fields.len() > 0 {
-    //         // TODO: throw error
-    //     };
-    //     self.all = true;
-    //     self
-    // }
+    pub fn build(&self) -> Result<String, ()> {
+        let fields_invalid =
+            (self.all && !self.fields.is_empty()) || (!self.all || self.fields.is_empty());
+        let table_name_undifned = self.table.is_empty();
+        let condition_empty = self.conditions.is_none();
+
+        if fields_invalid || table_name_undifned {
+            return Err(());
+        }
+        let fields = if self.all {
+            "*".to_owned()
+        } else {
+            self.fields.join(", ")
+        };
+
+        let table: &str = &self.table;
+        let conditions = if condition_empty {
+            String::new()
+        } else {
+            self.build_conditions()
+        };
+        Ok(format!("select {} from {} {}", fields, table, conditions))
+    }
+
+    pub fn all_fields(&mut self) -> &Self {
+        self.all = true;
+        self
+    }
 }
 
 #[cfg(test)]
