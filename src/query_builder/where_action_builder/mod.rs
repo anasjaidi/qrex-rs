@@ -4,8 +4,19 @@ where
 {
     pub table: String,
     pub fields: Vec<String>,
-    pub conditions: Vec<WhereCondition<T>>,
+    pub conditions: Option<WhereCondition<T>>,
     pub all: bool,
+}
+
+impl<T> Default for QueryActionBuilder<T> {
+    fn default() -> Self {
+        Self {
+            table: String::new(),
+            all: false,
+            conditions: None,
+            fields: vec![],
+        }
+    }
 }
 
 pub enum WhereCondition<T>
@@ -15,8 +26,8 @@ where
     NATIVE(String),
     NULL,
     NOTNULL,
-    AND(Vec<WhereCondition<T>>),
-    OR(Vec<WhereCondition<T>>),
+    AND(Box<Self>, Box<Self>),
+    OR(Box<Self>, Box<Self>),
     IN(String, Vec<T>),
     NOTIN(String, Vec<T>),
     EQ(String, T),
@@ -29,11 +40,33 @@ where
     LIKE(String, String),
 }
 
-impl<T> QueryActionBuilder<T> {
+impl<T> Clone for WhereCondition<T> {
+    fn clone(&self) -> Self {
+        todo!();
+    }
+}
+
+impl<T> QueryActionBuilder<T>
+where
+    T: Sized,
+{
+    // TODO: fix this function is just a boilerplate for build function
+    pub fn dummy_build(&self) -> String {
+        let mut w = String::new();
+        fn gc<T>(a: &WhereCondition<T>, w: &mut str) {}
+
+        w
+    }
+
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn fields(&mut self, fields: &[&str]) -> &Self {
         if self.all {
             // TODO: throw error
         }
+
         self.fields = fields
             .iter()
             .map(|f| f.to_string())
@@ -46,8 +79,29 @@ impl<T> QueryActionBuilder<T> {
         self
     }
 
-    pub fn where_condition(&mut self) -> &Self {
+    pub fn or_where(&mut self, condition: WhereCondition<T>) -> &Self {
+        if let None = self.conditions {
+            // TODO: handle error
+        }
+        self.conditions = Some(WhereCondition::OR(
+            Box::new(self.conditions.as_ref().unwrap().clone()),
+            Box::new(condition),
+        ));
         self
+    }
+
+    pub fn whene(&mut self, condition: WhereCondition<T>) -> &Self {
+        match &self.conditions {
+            None => {
+                self.conditions = Some(condition);
+                self
+            }
+            Some(c) => {
+                self.conditions =
+                    Some(WhereCondition::OR(Box::new(c.clone()), Box::new(condition)));
+                self
+            }
+        }
     }
 
     pub fn all_fields(&mut self) -> &Self {
