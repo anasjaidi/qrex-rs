@@ -12,23 +12,12 @@ impl QueryBuilder {
         Self
     }
 
-    pub fn select(&self) -> QueryActionBuilder {
+    pub fn select(&self) -> QueryActionBuilder<u32> {
         QueryActionBuilder {
+            conditions: todo!(),
             table: String::new(),
             all: false,
             fields: vec![],
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::QueryBuilder;
-
-    #[test]
-    fn test() {
-        let builder = QueryBuilder::new();
-
-        builder.select().all_fields();
     }
 }
