@@ -1,5 +1,7 @@
 use dyn_clone::DynClone;
 
+use super::condition::Condition;
+
 #[derive(Clone, Debug)]
 pub enum Agregate {
     Sum(String),
@@ -37,12 +39,30 @@ pub trait ClonableString: DynClone + ToString {}
 
 impl<T> ClonableString for T where T: Clone + ToString {}
 
-pub trait Select {
+pub trait Select: Condition {
     fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>));
 
     fn get_fields(&self) -> &[String];
 
+    fn set_table(&mut self, table: &str);
+
+    fn get_table(&self) -> String;
+
     fn select_all_fields(&mut self) {
+        let fields = self.get_fields();
+        let mut exist = false;
+        if !fields.is_empty() && fields[0] == "#**#" {
+            exist = true;
+        }
+
+        self.set_fields(|f| {
+            if exist {
+                let item = f.get_mut(0).unwrap();
+                item.0 = "*".to_string();
+            } else {
+                f.insert(0, (String::from("*"), "".to_string()))
+            }
+        });
         self.set_fields(|f| *f = vec![("*".to_string(), String::new())]);
     }
 
@@ -56,7 +76,22 @@ pub trait Select {
         self
     }
 
-    fn alias(&mut self);
+    fn alias(&mut self, alias: &str) {
+        let fields = self.get_fields();
+        let mut exist = false;
+        if !fields.is_empty() && fields[0] == "*" {
+            exist = true;
+        }
+
+        self.set_fields(|f| {
+            if exist {
+                let item = f.get_mut(0).unwrap();
+                item.1 = alias.to_string();
+            } else {
+                f.insert(0, (String::from("#**#"), alias.to_string()))
+            }
+        })
+    }
 
     fn select_fields(&mut self, fields: &[&str]) {
         for &f in fields.iter() {
