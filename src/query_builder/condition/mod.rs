@@ -34,11 +34,7 @@ pub trait Condition {
     fn get_condition(&self) -> Option<&WhereCondition>;
 
     fn build_conditions(&self) -> Option<String> {
-        let condition = self.get_condition();
-        if condition.is_none() {
-            return None;
-        }
-        let condition = condition.unwrap();
+        let condition = self.get_condition()?;
         fn gc(c: &WhereCondition) -> String {
             match c {
                 WhereCondition::OR(lhs, rhs) => format!("({} OR {})", gc(lhs), gc(rhs)),
