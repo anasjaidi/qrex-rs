@@ -1,3 +1,15 @@
+// ************************************************************************** //
+//                                                                            //
+//                                                        :::      ::::::::   //
+//   mod.rs                                             :+:      :+:    :+:   //
+//                                                    +:+ +:+         +:+     //
+//   By: ajaidi <ajaidi@student.42.fr>              +#+  +:+       +#+        //
+//                                                +#+#+#+#+#+   +#+           //
+//   Created: 2024/06/06 11:44:18 by ajaidi            #+#    #+#             //
+//   Updated: 2024/06/06 14:27:03 by ajaidi           ###   ########.fr       //
+//                                                                            //
+// ************************************************************************** //
+
 use dyn_clone::DynClone;
 
 use super::condition::Condition;
@@ -42,16 +54,43 @@ impl<T> ClonableString for T where T: Clone + ToString {}
 pub trait Select: Condition {
     fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>));
 
-    fn get_fields(&self) -> &[String];
+    fn get_fields(&self) -> &[(&str, &str)];
 
     fn set_table(&mut self, table: &str);
 
     fn get_table(&self) -> String;
 
+    fn build_select(&self) -> Option<String> {
+        let fields_vec = self.get_fields();
+
+        if fields_vec.is_empty() {
+            return None;
+        }
+
+        let fields = if fields_vec[0].0 == "*" {
+            String::from("*")
+        } else {
+            fields_vec
+                .iter()
+                .map(|f| format!("{} as {}", f.0, f.1,))
+                .collect::<Vec<String>>()
+                .join(", ")
+        };
+
+        let conditions = self.build_conditions()?;
+
+        Some(format!(
+            "SELECT {} FROM {} WHERE {}",
+            fields,
+            self.get_table(),
+            conditions
+        ))
+    }
+
     fn select_all_fields(&mut self) {
         let fields = self.get_fields();
         let mut exist = false;
-        if !fields.is_empty() && fields[0] == "#**#" {
+        if !fields.is_empty() && fields[0].0 == "#**#" {
             exist = true;
         }
 
@@ -79,7 +118,7 @@ pub trait Select: Condition {
     fn alias(&mut self, alias: &str) {
         let fields = self.get_fields();
         let mut exist = false;
-        if !fields.is_empty() && fields[0] == "*" {
+        if !fields.is_empty() && fields[0].0 == "*" {
             exist = true;
         }
 
