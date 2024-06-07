@@ -95,6 +95,70 @@ pub trait Condition {
     }
 }
 
+pub trait Having {
+    fn set_having(&mut self, condition: WhereCondition);
+    fn get_having(&self) -> Option<&WhereCondition>;
+
+    fn build_having(&self) -> Option<String> {
+        let condition = self.get_having()?;
+        fn gc(c: &WhereCondition) -> String {
+            match c {
+                WhereCondition::Or(lhs, rhs) => format!("({} Or {})", gc(lhs), gc(rhs)),
+                WhereCondition::And(lhs, rhs) => format!("({} And {})", gc(lhs), gc(rhs)),
+                WhereCondition::Null(f) => format!("{} IS Null", f),
+                WhereCondition::NotNull(f) => format!("{} IS NOT Null", f),
+                WhereCondition::In(f, d) => {
+                    let values = d
+                        .iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    format!("{} In ({})", f, values)
+                }
+                WhereCondition::NotIn(f, d) => {
+                    let values = d
+                        .iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    format!("{} NOT In ({})", f, values)
+                }
+                WhereCondition::Eq(f, d) => format!("{} = {}", f, d),
+                WhereCondition::Neq(f, d) => format!("{} != {}", f, d),
+                WhereCondition::Lt(f, d) => format!("{} < {}", f, d),
+                WhereCondition::Lte(f, d) => format!("{} <= {}", f, d),
+                WhereCondition::Gt(f, d) => format!("{} > {}", f, d),
+                WhereCondition::Gte(f, d) => format!("{} >= {}", f, d),
+                WhereCondition::Like(f, d) => format!("{} Like '{}'", f, d),
+                WhereCondition::Between(f, a, b) => format!("{} Between {} And {}", f, a, b),
+                WhereCondition::Native(f) => f.clone(),
+            }
+        }
+        Some(gc(condition))
+    }
+
+    fn or_having(&mut self, condition: WhereCondition) -> &Self {
+        if let Some(c) = self.get_having() {
+            self.set_having(WhereCondition::Or(Box::new(c.clone()), Box::new(condition)))
+        } else {
+            self.set_having(condition);
+        }
+        self
+    }
+
+    fn having(&mut self, condition: WhereCondition) -> &Self {
+        if let Some(c) = self.get_having() {
+            self.set_having(WhereCondition::And(
+                Box::new(c.clone()),
+                Box::new(condition),
+            ))
+        } else {
+            self.set_having(condition);
+        }
+        self
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{Condition, WhereCondition};
