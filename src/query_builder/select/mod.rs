@@ -182,3 +182,46 @@ pub trait Select: Condition {
     //     //fields.push("");
     // }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::query_builder::condition::{Condition, WhereCondition};
+
+    use super::Select;
+
+    struct QueryBuilder {
+        c: Option<WhereCondition>,
+        t: String,
+        f: Vec<(String, String)>,
+    }
+
+    impl Condition for QueryBuilder {
+        fn get_condition(&self) -> Option<&WhereCondition> {
+            self.c.as_ref()
+        }
+        fn set_condition(&mut self, condition: WhereCondition) {
+            self.c = Some(condition)
+        }
+    }
+
+    impl Select for QueryBuilder {
+        fn set_table(&mut self, table: &str) {
+            self.t = table.to_string()
+        }
+
+        fn get_table(&self) -> String {
+            self.t.to_string()
+        }
+
+        fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>)) {
+            fields(&mut self.f)
+        }
+
+        fn get_fields(&self) -> Vec<(&str, &str)> {
+            self.f
+                .iter()
+                .map(|k| (k.0.as_str(), k.1.as_str()))
+                .collect::<Vec<(&str, &str)>>()
+        }
+    }
+}
