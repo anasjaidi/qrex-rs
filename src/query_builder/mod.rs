@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod condition;
 mod query;
 mod select;
