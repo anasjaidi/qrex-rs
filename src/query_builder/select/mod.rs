@@ -15,7 +15,7 @@ use std::fmt;
 
 use dyn_clone::DynClone;
 
-use super::condition::{Condition, Having, WhereCondition};
+use super::condition::{Condition, Having};
 
 #[derive(Clone, Debug)]
 pub enum Agregate {
@@ -61,14 +61,14 @@ pub enum OrderByClauses {
     Aliases(Vec<String>),
     Expression(String),
     Agregate(String, String),
-    Having(WhereCondition),
+    Having(Condition),
 }
 
 pub trait ClonableString: DynClone + ToString {}
 
 impl<T> ClonableString for T where T: Clone + ToString {}
 
-pub trait Select: Condition {
+pub trait Select {
     fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>));
 
     fn get_fields(&self) -> Vec<(&str, &str)>;
@@ -107,7 +107,7 @@ pub trait Select: Condition {
                 .join(", ")
         };
 
-        let conditions = self.build_conditions()?;
+        let conditions = ""; //self.build_conditions()?;
 
         Some(format!(
             "SELECT {} FROM {} WHERE {}",
@@ -257,60 +257,5 @@ pub trait GroupBy {
     fn group_by_fields(&mut self, fields: Vec<String>) -> &mut Self {
         self.set_group(fields);
         self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::query_builder::condition::{Condition, WhereCondition};
-
-    use super::Select;
-
-    #[derive(Default)]
-    struct QueryBuilder {
-        c: Option<WhereCondition>,
-        t: String,
-        f: Vec<(String, String)>,
-    }
-
-    impl Condition for QueryBuilder {
-        fn get_condition(&self) -> Option<&WhereCondition> {
-            self.c.as_ref()
-        }
-        fn set_condition(&mut self, condition: WhereCondition) {
-            self.c = Some(condition)
-        }
-    }
-
-    impl Select for QueryBuilder {
-        fn set_table(&mut self, table: &str) {
-            self.t = table.to_string()
-        }
-
-        fn get_table(&self) -> String {
-            self.t.to_string()
-        }
-
-        fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>)) {
-            fields(&mut self.f)
-        }
-
-        fn get_fields(&self) -> Vec<(&str, &str)> {
-            self.f
-                .iter()
-                .map(|k| (k.0.as_str(), k.1.as_str()))
-                .collect::<Vec<(&str, &str)>>()
-        }
-    }
-
-    #[test]
-    fn test_basic() {
-        let mut b = QueryBuilder::default();
-        let q = b
-            .with_table("Users")
-            .select_fields(&["anas", "jaidi"])
-            .whene(WhereCondition::NotNull("anas".to_string()))
-            .build_select();
-        println!("{:?}", q);
     }
 }
