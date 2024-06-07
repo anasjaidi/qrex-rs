@@ -15,7 +15,7 @@ use std::fmt;
 
 use dyn_clone::DynClone;
 
-use super::condition::{Condition, WhereCondition};
+use super::condition::{Condition, Having, WhereCondition};
 
 #[derive(Clone, Debug)]
 pub enum Agregate {
@@ -76,7 +76,12 @@ pub trait Select: Condition {
     fn set_table(&mut self, table: &str);
 
     fn get_table(&self) -> String;
-    //
+
+    fn with_table(&mut self, table: &str) -> &mut Self {
+        self.set_table(table);
+        self
+    }
+
     // fn get_group(&self) -> &[&str];
     //
     // fn set_group(&mut self);
@@ -120,7 +125,7 @@ pub trait Select: Condition {
     //     todo!()
     // }
     //
-    fn select_all_fields(&mut self) {
+    fn select_all_fields(&mut self) -> &Self {
         let fields = self.get_fields();
         let mut exist = false;
         if !fields.is_empty() && fields[0].0 == "#**#" {
@@ -136,6 +141,7 @@ pub trait Select: Condition {
             }
         });
         self.set_fields(|f| *f = vec![("*".to_string(), String::new())]);
+        self
     }
 
     fn select_alias_field(&mut self, field: (Box<dyn ClonableString>, &str)) -> &Self {
@@ -148,7 +154,7 @@ pub trait Select: Condition {
         self
     }
 
-    fn alias(&mut self, alias: &str) {
+    fn alias(&mut self, alias: &str) -> &Self {
         let fields = self.get_fields();
         let mut exist = false;
         if !fields.is_empty() && fields[0].0 == "*" {
@@ -162,13 +168,15 @@ pub trait Select: Condition {
             } else {
                 f.insert(0, (String::from("#**#"), alias.to_string()))
             }
-        })
+        });
+        self
     }
 
-    fn select_fields(&mut self, fields: &[&str]) {
+    fn select_fields(&mut self, fields: &[&str]) -> &mut Self {
         for &f in fields.iter() {
             self.select_alias_field((Box::new(f.to_owned()), f));
         }
+        self
     }
     //
     // #[allow(unused)]
@@ -183,12 +191,28 @@ pub trait Select: Condition {
     // }
 }
 
+pub trait GroupBy {
+    fn get_group(&self) -> &[&str];
+    fn set_group(&mut self, group: Vec<String>);
+
+    fn group_by_field(&mut self, field: &str) -> &mut Self {
+        self.set_group(vec![field.to_owned()]);
+        self
+    }
+
+    fn group_by_fields(&mut self, fields: Vec<String>) -> &mut Self {
+        self.set_group(fields);
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::query_builder::condition::{Condition, WhereCondition};
 
     use super::Select;
 
+    #[derive(Default)]
     struct QueryBuilder {
         c: Option<WhereCondition>,
         t: String,
@@ -223,5 +247,16 @@ mod tests {
                 .map(|k| (k.0.as_str(), k.1.as_str()))
                 .collect::<Vec<(&str, &str)>>()
         }
+    }
+
+    #[test]
+    fn test_basic() {
+        let mut b = QueryBuilder::default();
+        let q = b
+            .with_table("Users")
+            .select_fields(&["anas", "jaidi"])
+            .whene(WhereCondition::NotNull("anas".to_string()))
+            .build_select();
+        println!("{:?}", q);
     }
 }
