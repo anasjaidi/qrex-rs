@@ -12,6 +12,8 @@
 
 #![allow(unused)]
 
+use super::select::GroupBy;
+
 #[derive(Debug, Clone)]
 pub enum WhereCondition {
     Native(String),
@@ -95,7 +97,7 @@ pub trait Condition {
     }
 }
 
-pub trait Having {
+pub trait Having: GroupBy {
     fn set_having(&mut self, condition: WhereCondition);
     fn get_having(&self) -> Option<&WhereCondition>;
 

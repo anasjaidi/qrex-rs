@@ -191,6 +191,16 @@ pub trait Select: Condition {
     // }
 }
 
+pub enum Order {
+    Asc,
+    Desc,
+}
+
+pub trait OrderBy {
+    fn get_group(&self) -> &[(&str, &Order)];
+    fn set_group(&mut self, group: Vec<(String, Order)>);
+}
+
 pub trait GroupBy {
     fn get_group(&self) -> &[&str];
     fn set_group(&mut self, group: Vec<String>);
