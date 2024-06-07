@@ -198,7 +198,12 @@ pub trait OrderBy {
     fn set_order(&mut self, group: Vec<(String, Order)>);
 
     fn raw_order(&mut self, raw: &str) -> &mut Self;
-    //
+
+    fn order_by_expression(&mut self, exp: &str) -> &mut Self {
+        // TODO: IMPL ME LATER
+        self
+    }
+
     // fn order_by_row(&mut self, row: u32, order: Order) -> &mut Self {
     //     self.set_order(vec![(row.to_string(), Order::Asc)]);
     //     self
