@@ -144,12 +144,9 @@ pub trait Select: Condition {
         self
     }
 
-    fn select_alias_field(&mut self, field: (Box<dyn ClonableString>, &str)) -> &Self {
+    fn select_alias_field(&mut self, field: impl ClonableString, alias: &str) -> &Self {
         self.set_fields(|f| {
-            (*f).push((
-                dyn_clone::clone_box(&*field.0).to_string(),
-                field.1.to_owned(),
-            ))
+            (*f).push((dyn_clone::clone_box(&field).to_string(), alias.to_owned()))
         });
         self
     }
@@ -174,7 +171,7 @@ pub trait Select: Condition {
 
     fn select_fields(&mut self, fields: &[&str]) -> &mut Self {
         for &f in fields.iter() {
-            self.select_alias_field((Box::new(f.to_owned()), f));
+            self.select_alias_field(f, f);
         }
         self
     }
@@ -197,8 +194,50 @@ pub enum Order {
 }
 
 pub trait OrderBy {
-    fn get_group(&self) -> &[(&str, &Order)];
-    fn set_group(&mut self, group: Vec<(String, Order)>);
+    fn get_order(&self) -> &[(&str, &Order)];
+    fn set_order(&mut self, group: Vec<(String, Order)>);
+
+    fn raw_order(&mut self, raw: &str) -> &mut Self;
+    //
+    // fn order_by_row(&mut self, row: u32, order: Order) -> &mut Self {
+    //     self.set_order(vec![(row.to_string(), Order::Asc)]);
+    //     self
+    // }
+    //
+    fn order_by_row_asc(&mut self, row: u32) -> &mut Self {
+        self.set_order(vec![(row.to_string(), Order::Asc)]);
+        self
+    }
+
+    fn order_by_row(&mut self, row: u32, order: Order) -> &mut Self {
+        self.set_order(vec![(row.to_string(), order)]);
+        self
+    }
+
+    fn order_by_row_desc(&mut self, row: u32) -> &mut Self {
+        self.set_order(vec![(row.to_string(), Order::Desc)]);
+        self
+    }
+
+    fn order_by_field_asc(&mut self, field: &str) -> &mut Self {
+        self.set_order(vec![(field.to_owned(), Order::Asc)]);
+        self
+    }
+
+    fn order_by_field_desc(&mut self, field: &str) -> &mut Self {
+        self.set_order(vec![(field.to_owned(), Order::Desc)]);
+        self
+    }
+
+    fn order_by_field(&mut self, field: &str, order: Order) -> &mut Self {
+        self.set_order(vec![(field.to_owned(), order)]);
+        self
+    }
+
+    fn order_by_fields(&mut self, fields: Vec<(String, Order)>) -> &mut Self {
+        self.set_order(fields);
+        self
+    }
 }
 
 pub trait GroupBy {
