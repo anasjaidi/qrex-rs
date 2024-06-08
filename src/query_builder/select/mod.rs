@@ -11,11 +11,17 @@
 // ************************************************************************** //
 
 #![allow(unused)]
+
 use std::fmt;
 
 use dyn_clone::DynClone;
 
-use super::condition::{Condition, Having};
+use super::group_by::GroupBy;
+use super::{
+    condition::{self, Condition},
+    join::Join,
+    order_by::OrderBy,
+};
 
 #[derive(Clone, Debug)]
 pub enum Agregate {
@@ -30,6 +36,7 @@ pub enum Agregate {
     Var(String),
     StringAgg(String, String), // Takes column and separator as arguments
 }
+
 impl fmt::Display for Agregate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -49,47 +56,28 @@ impl fmt::Display for Agregate {
     }
 }
 
-pub enum OrderDirection {
-    Asc,
-    Desc,
-}
-
-pub enum OrderByClauses {
-    Field(String),
-    Fields(Vec<String>),
-    Alias(String),
-    Aliases(Vec<String>),
-    Expression(String),
-    Agregate(String, String),
-    Having(Condition),
-}
-
 pub trait ClonableString: DynClone + ToString {}
 
 impl<T> ClonableString for T where T: Clone + ToString {}
 
-pub trait Select {
+pub trait Select: GroupBy + OrderBy + Join {
     fn set_fields(&mut self, fields: impl Fn(&mut Vec<(String, String)>));
 
     fn get_fields(&self) -> Vec<(&str, &str)>;
+
+    fn get_condition(&self) -> Option<Condition>;
+
+    fn set_condition(&mut self, condition: Condition);
 
     fn set_table(&mut self, table: &str);
 
     fn get_table(&self) -> String;
 
-    fn with_table(&mut self, table: &str) -> &mut Self {
+    fn table(&mut self, table: &str) -> &mut Self {
         self.set_table(table);
         self
     }
 
-    // fn get_group(&self) -> &[&str];
-    //
-    // fn set_group(&mut self);
-    //
-    // fn get_order(&self) -> &[&OrderByClauses];
-    //
-    // fn set_order(&mut self, fields: &[&OrderByClauses]);
-    //
     fn build_select(&self) -> Option<String> {
         let fields_vec = self.get_fields();
 
@@ -117,14 +105,10 @@ pub trait Select {
         ))
     }
 
-    // fn group_by(&mut self) {
-    //     todo!()
-    // }
-    //
-    // fn order_by(&mut self) {
-    //     todo!()
-    // }
-    //
+    fn r#where(&mut self, condition: Condition) {
+        self.set_condition(condition);
+    }
+
     fn select_all_fields(&mut self) -> &Self {
         let fields = self.get_fields();
         let mut exist = false;
@@ -186,76 +170,4 @@ pub trait Select {
     //
     //     //fields.push("");
     // }
-}
-
-pub enum Order {
-    Asc,
-    Desc,
-}
-
-pub trait OrderBy {
-    fn get_order(&self) -> &[(&str, &Order)];
-    fn set_order(&mut self, group: Vec<(String, Order)>);
-
-    fn raw_order(&mut self, raw: &str) -> &mut Self;
-
-    fn order_by_expression(&mut self, exp: &str) -> &mut Self {
-        // TODO: IMPL ME LATER
-        self
-    }
-
-    // fn order_by_row(&mut self, row: u32, order: Order) -> &mut Self {
-    //     self.set_order(vec![(row.to_string(), Order::Asc)]);
-    //     self
-    // }
-    //
-    fn order_by_row_asc(&mut self, row: u32) -> &mut Self {
-        self.set_order(vec![(row.to_string(), Order::Asc)]);
-        self
-    }
-
-    fn order_by_row(&mut self, row: u32, order: Order) -> &mut Self {
-        self.set_order(vec![(row.to_string(), order)]);
-        self
-    }
-
-    fn order_by_row_desc(&mut self, row: u32) -> &mut Self {
-        self.set_order(vec![(row.to_string(), Order::Desc)]);
-        self
-    }
-
-    fn order_by_field_asc(&mut self, field: &str) -> &mut Self {
-        self.set_order(vec![(field.to_owned(), Order::Asc)]);
-        self
-    }
-
-    fn order_by_field_desc(&mut self, field: &str) -> &mut Self {
-        self.set_order(vec![(field.to_owned(), Order::Desc)]);
-        self
-    }
-
-    fn order_by_field(&mut self, field: &str, order: Order) -> &mut Self {
-        self.set_order(vec![(field.to_owned(), order)]);
-        self
-    }
-
-    fn order_by_fields(&mut self, fields: Vec<(String, Order)>) -> &mut Self {
-        self.set_order(fields);
-        self
-    }
-}
-
-pub trait GroupBy {
-    fn get_group(&self) -> &[&str];
-    fn set_group(&mut self, group: Vec<String>);
-
-    fn group_by_field(&mut self, field: &str) -> &mut Self {
-        self.set_group(vec![field.to_owned()]);
-        self
-    }
-
-    fn group_by_fields(&mut self, fields: Vec<String>) -> &mut Self {
-        self.set_group(fields);
-        self
-    }
 }
