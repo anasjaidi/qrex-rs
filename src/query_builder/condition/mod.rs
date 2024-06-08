@@ -82,77 +82,78 @@ impl Condition {
         self
     }
 }
-
-pub trait Having: GroupBy {
-    fn set_having(&mut self, condition: Condition);
-    fn get_having(&self) -> Option<&Condition>;
-
-    fn build_having(&self) -> Option<String> {
-        let condition = self.get_having()?;
-        fn gc(c: &Condition) -> String {
-            match c {
-                Condition::Or(lhs, rhs) => format!("({} Or {})", gc(lhs), gc(rhs)),
-                Condition::And(lhs, rhs) => format!("({} And {})", gc(lhs), gc(rhs)),
-                Condition::Null(f) => format!("{} IS Null", f),
-                Condition::NotNull(f) => format!("{} IS NOT Null", f),
-                Condition::In(f, d) => {
-                    let values = d
-                        .iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ");
-                    format!("{} In ({})", f, values)
-                }
-                Condition::NotIn(f, d) => {
-                    let values = d
-                        .iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ");
-                    format!("{} NOT In ({})", f, values)
-                }
-                Condition::Eq(f, d) => format!("{} = {}", f, d),
-                Condition::Neq(f, d) => format!("{} != {}", f, d),
-                Condition::Lt(f, d) => format!("{} < {}", f, d),
-                Condition::Lte(f, d) => format!("{} <= {}", f, d),
-                Condition::Gt(f, d) => format!("{} > {}", f, d),
-                Condition::Gte(f, d) => format!("{} >= {}", f, d),
-                Condition::Like(f, d) => format!("{} Like '{}'", f, d),
-                Condition::Between(f, a, b) => format!("{} Between {} And {}", f, a, b),
-                Condition::Native(f) => f.clone(),
-            }
-        }
-        Some(gc(condition))
-    }
-
-    fn or_having(&mut self, condition: Condition) -> &Self {
-        if let Some(c) = self.get_having() {
-            self.set_having(Condition::Or(Box::new(c.clone()), Box::new(condition)))
-        } else {
-            self.set_having(condition);
-        }
-        self
-    }
-
-    fn having(&mut self, condition: Condition) -> &Self {
-        if let Some(c) = self.get_having() {
-            self.set_having(Condition::And(Box::new(c.clone()), Box::new(condition)))
-        } else {
-            self.set_having(condition);
-        }
-        self
-    }
-}
-
-#[test]
-fn test() {
-    let mut c = Condition::Null("anas".to_owned())
-        .and(Condition::NotNull("jaidi".to_owned()))
-        .or(Condition::Eq("anas".to_owned(), "jaidi".to_owned()));
-
-    println!("{:?}", c);
-}
-
+//
+// pub trait Having: GroupBy {
+//     fn set_having(&mut self, condition: Condition);
+//     fn get_having(&self) -> Option<&Condition>;
+//
+//     fn build_having(&self) -> Option<String> {
+//         let condition = self.get_having()?;
+//         fn gc(c: &Condition) -> String {
+//             match c {
+//                 Condition::Or(lhs, rhs) => format!("({} Or {})", gc(lhs), gc(rhs)),
+//                 Condition::And(lhs, rhs) => format!("({} And {})", gc(lhs), gc(rhs)),
+//                 Condition::Null(f) => format!("{} IS Null", f),
+//                 Condition::NotNull(f) => format!("{} IS NOT Null", f),
+//                 Condition::In(f, d) => {
+//                     let values = d
+//                         .iter()
+//                         .map(|v| v.to_string())
+//                         .collect::<Vec<String>>()
+//                         .join(", ");
+//                     format!("{} In ({})", f, values)
+//                 }
+//                 Condition::NotIn(f, d) => {
+//                     let values = d
+//                         .iter()
+//                         .map(|v| v.to_string())
+//                         .collect::<Vec<String>>()
+//                         .join(", ");
+//                     format!("{} NOT In ({})", f, values)
+//                 }
+//                 Condition::Eq(f, d) => format!("{} = {}", f, d),
+//                 Condition::Neq(f, d) => format!("{} != {}", f, d),
+//                 Condition::Lt(f, d) => format!("{} < {}", f, d),
+//                 Condition::Lte(f, d) => format!("{} <= {}", f, d),
+//                 Condition::Gt(f, d) => format!("{} > {}", f, d),
+//                 Condition::Gte(f, d) => format!("{} >= {}", f, d),
+//                 Condition::Like(f, d) => format!("{} Like '{}'", f, d),
+//                 Condition::Between(f, a, b) => format!("{} Between {} And {}", f, a, b),
+//                 Condition::Native(f) => f.clone(),
+//             }
+//         }
+//         Some(gc(condition))
+//     }
+//
+//     fn or_having(&mut self, condition: Condition) -> &Self {
+//         if let Some(c) = self.get_having() {
+//             self.set_having(Condition::Or(Box::new(c.clone()), Box::new(condition)))
+//         } else {
+//             self.set_having(condition);
+//         }
+//         self
+//     }
+//
+//     fn having(&mut self, condition: Condition) -> &Self {
+//         if let Some(c) = self.get_having() {
+//             self.set_having(Condition::And(Box::new(c.clone()), Box::new(condition)))
+//         } else {
+//             self.set_having(condition);
+//         }
+//         self
+//     }
+// }
+//
+// #[test]
+// fn test() {
+//     let mut c = Condition::Null("anas".to_owned())
+//         .and(Condition::NotNull("jaidi".to_owned()))
+//         .or(Condition::Eq("anas".to_owned(), "jaidi".to_owned()))
+//         .build_conditions();
+//
+//     println!("{:?}", c);
+// }
+//
 //
 // #[cfg(test)]
 // mod test {
