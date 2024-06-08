@@ -30,6 +30,44 @@ pub enum Condition {
     Lte(String, String),
     Like(String, String),
 }
+trait SqlValue {
+    fn parse_sql_value(&self) -> String;
+}
+
+macro_rules! impl_sql_value {
+    ($t:ty) => {
+        impl SqlValue for $t {
+            fn parse_sql_value(&self) -> String {
+                self.to_string()
+            }
+        }
+    };
+}
+
+macro_rules! impl_sql_value_quoted {
+    ($t:ty) => {
+        impl SqlValue for $t {
+            fn parse_sql_value(&self) -> String {
+                format!("'{}'", self)
+            }
+        }
+    };
+}
+
+impl_sql_value!(i8);
+impl_sql_value!(i16);
+impl_sql_value!(i32);
+impl_sql_value!(i64);
+impl_sql_value!(u8);
+impl_sql_value!(u16);
+impl_sql_value!(u32);
+impl_sql_value!(u64);
+impl_sql_value!(f32);
+impl_sql_value!(f64);
+impl_sql_value!(bool);
+impl_sql_value_quoted!(String);
+impl_sql_value_quoted!(&str);
+impl_sql_value_quoted!(char);
 
 impl Condition {
     pub fn build_conditions(&self) -> Option<String> {
@@ -42,7 +80,7 @@ impl Condition {
                 Condition::In(f, d) => {
                     let values = d
                         .iter()
-                        .map(|v| v.to_string())
+                        .map(|v| v.parse_sql_value())
                         .collect::<Vec<String>>()
                         .join(", ");
                     format!("{} IN ({})", f, values)
@@ -50,19 +88,24 @@ impl Condition {
                 Condition::NotIn(f, d) => {
                     let values = d
                         .iter()
-                        .map(|v| v.to_string())
+                        .map(|v| v.parse_sql_value())
                         .collect::<Vec<String>>()
                         .join(", ");
                     format!("{} NOT IN ({})", f, values)
                 }
-                Condition::Eq(f, d) => format!("{} = {}", f, d),
-                Condition::Neq(f, d) => format!("{} != {}", f, d),
-                Condition::Lt(f, d) => format!("{} < {}", f, d),
-                Condition::Lte(f, d) => format!("{} <= {}", f, d),
-                Condition::Gt(f, d) => format!("{} > {}", f, d),
-                Condition::Gte(f, d) => format!("{} >= {}", f, d),
-                Condition::Like(f, d) => format!("{} Like '{}'", f, d),
-                Condition::Between(f, a, b) => format!("{} BETWEEN {} And {}", f, a, b),
+                Condition::Eq(f, d) => format!("{} = {}", f, d.parse_sql_value()),
+                Condition::Neq(f, d) => format!("{} != {}", f, d.parse_sql_value()),
+                Condition::Lt(f, d) => format!("{} < {}", f, d.parse_sql_value()),
+                Condition::Lte(f, d) => format!("{} <= {}", f, d.parse_sql_value()),
+                Condition::Gt(f, d) => format!("{} > {}", f, d.parse_sql_value()),
+                Condition::Gte(f, d) => format!("{} >= {}", f, d.parse_sql_value()),
+                Condition::Like(f, d) => format!("{} Like '{}'", f, d.parse_sql_value()),
+                Condition::Between(f, a, b) => format!(
+                    "{} BETWEEN {} And {}",
+                    f,
+                    a.parse_sql_value(),
+                    b.parse_sql_value()
+                ),
                 Condition::Native(f) => f.clone(),
             }
         }
