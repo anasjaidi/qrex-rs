@@ -50,14 +50,14 @@ mod tuto {
         }
 
         macro_rules! add_zero_or_one {
-            ($n: expr  $(, )* $(, $a: literal )?) => {{
+            ($n: expr $(,)? $($a: expr)?) => {
                 let mut n = $n;
 
                 $(
                     n += $a;
                 )?
                 n
-                }};
+            };
         }
 
         #[test]
@@ -73,7 +73,7 @@ mod tuto {
         #[test]
 
         fn test_rep2() {
-            assert_eq!(5, add_zero_or_one!(5));
+            assert_eq!(3, add_zero_or_one!(3));
         }
         #[test]
         fn test_dummy0() {
