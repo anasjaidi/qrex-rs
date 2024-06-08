@@ -13,7 +13,7 @@ pub struct JoinEntry {
 
 // rust is the most diffuclt
 
-trait Join {
+pub trait Join {
     // fn inner_join(&self, table_to_join: &str) {
     //     self.set_join(|f| {
     //         f.push(JoinEntry {
