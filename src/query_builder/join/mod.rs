@@ -1,3 +1,5 @@
+use super::condition::Condition;
+
 pub enum JoinType {
     Inner,
     Outer,
@@ -8,61 +10,100 @@ pub enum JoinType {
 pub struct JoinEntry {
     table: String,
     join_type: JoinType,
-    on: Option<()>,
+    on: Option<Condition>,
 }
 
 // rust is the most diffuclt
 
 pub trait Join {
-    // fn inner_join(&self, table_to_join: &str) {
-    //     self.set_join(|f| {
-    //         f.push(JoinEntry {
-    //             table: table_to_join.to_owned(),
-    //             join_type: JoinType::Inner,
-    //             on: None, // TODO: me later
-    //         })
-    //     })
-    // }
-    //
-    // fn outer_join(&self, table_to_join: &str) {
-    //     self.set_join(|f| {
-    //         f.push(JoinEntry {
-    //             table: table_to_join.to_owned(),
-    //             join_type: JoinType::Outer,
-    //             on: None, // TODO: me later
-    //         })
-    //     })
-    // }
-    //
-    // fn left_join(&self, table_to_join: &str) {
-    //     self.set_join(|f| {
-    //         f.push(JoinEntry {
-    //             table: table_to_join.to_owned(),
-    //             join_type: JoinType::Left,
-    //             on: None, // TODO: me later
-    //         })
-    //     })
-    // }
-    //
-    // fn right_join(&self, table_to_join: &str) {
-    //     self.set_join(|f| {
-    //         f.push(JoinEntry {
-    //             table: table_to_join.to_owned(),
-    //             join_type: JoinType::Right,
-    //             on: None, // TODO: me later
-    //         })
-    //     })
-    // }
-    //
-    // fn on(&mut self, condition: WhereCondition) -> &Self {
-    //     self.whene(condition)
-    // }
-    //
-    // fn or_on(&mut self, condition: WhereCondition) -> &Self {
-    //     self.or_where(condition)
-    // }
-    //
-    fn build_join() -> String {
-        format!("select _ from _ _ join _ on _ where _ ")
+    fn set_join(&mut self, f: impl FnOnce(&mut Vec<JoinEntry>));
+    fn get_join(&self) -> Vec<&JoinEntry>;
+
+    fn inner_join(&mut self, table_to_join: &str, condition: Option<Condition>) {
+        self.set_join(|f| {
+            f.push(JoinEntry {
+                table: table_to_join.to_owned(),
+                join_type: JoinType::Inner,
+                on: condition, // TODO: me later
+            })
+        })
+    }
+
+    fn outer_join(&mut self, table_to_join: &str, condition: Option<Condition>) {
+        self.set_join(|f| {
+            f.push(JoinEntry {
+                table: table_to_join.to_owned(),
+                join_type: JoinType::Outer,
+                on: condition, // TODO: me later
+            })
+        })
+    }
+
+    fn left_join(&mut self, table_to_join: &str, condition: Option<Condition>) {
+        self.set_join(|f| {
+            f.push(JoinEntry {
+                table: table_to_join.to_owned(),
+                join_type: JoinType::Left,
+                on: condition, // TODO: me later
+            })
+        })
+    }
+
+    fn right_join(&mut self, table_to_join: &str, condition: Option<Condition>) {
+        self.set_join(|f| {
+            f.push(JoinEntry {
+                table: table_to_join.to_owned(),
+                join_type: JoinType::Right,
+                on: condition, // TODO: me later
+            })
+        })
+    }
+
+    fn build_join(&self) -> Option<String> {
+        let joins = self.get_join();
+        if joins.is_empty() {
+            return None;
+        }
+
+        let join_strings = joins
+            .iter()
+            .map(|f| match f.join_type {
+                JoinType::Left => format!(
+                    "LEFT JOIN {} {}",
+                    f.table,
+                    f.on.as_ref().map_or_else(
+                        || "".to_owned(),
+                        |d| d.build_conditions().unwrap_or("".to_owned())
+                    )
+                ),
+                JoinType::Right => format!(
+                    "RIGHT JOIN {} {}",
+                    f.table,
+                    f.on.as_ref().map_or_else(
+                        || "".to_owned(),
+                        |d| d.build_conditions().unwrap_or("".to_owned())
+                    )
+                ),
+                JoinType::Inner => format!(
+                    "INNER JOIN {} {}",
+                    f.table,
+                    f.on.as_ref().map_or_else(
+                        || "".to_owned(),
+                        |d| d.build_conditions().unwrap_or("".to_owned())
+                    )
+                ),
+                JoinType::Outer => format!(
+                    "OUTER JOIN {} {}",
+                    f.table,
+                    f.on.as_ref().map_or_else(
+                        || "".to_owned(),
+                        |d| d.build_conditions().unwrap_or("".to_owned())
+                    )
+                ),
+            })
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        Some(join_strings)
     }
 }
