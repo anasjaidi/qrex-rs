@@ -16,9 +16,9 @@ use std::fmt;
 
 use dyn_clone::DynClone;
 
-use super::group_by::GroupBy;
 use super::{
     condition::{self, Condition},
+    group_by::GroupBy,
     join::Join,
     order_by::OrderBy,
 };
