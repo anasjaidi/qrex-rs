@@ -1,7 +1,7 @@
 use super::condition::Condition;
 
 pub trait GroupBy {
-    fn get_group(&self) -> &[&str];
+    fn get_group(&self) -> Vec<&str>;
     fn set_group(&mut self, group: Vec<String>);
 
     fn get_having_condition(&self) -> Option<&Condition>;
@@ -35,5 +35,32 @@ pub trait GroupBy {
     fn group_by_fields(&mut self, fields: Vec<String>) -> &mut Self {
         self.set_group(fields);
         self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::query_builder::condition::Condition;
+
+    use super::GroupBy;
+
+    #[derive(Clone, Default)]
+    struct GrouByTest {
+        groups: Vec<String>,
+        having: Option<Condition>,
+    }
+
+    impl GroupBy for GrouByTest {
+        fn get_group(&self) -> Vec<&str> {
+            self.groups.iter().map(|s| s.as_str()).collect()
+        }
+
+        fn set_having_condition(&mut self, condition: Condition) {}
+
+        fn set_group(&mut self, group: Vec<String>) {}
+
+        fn get_having_condition(&self) -> Option<&Condition> {
+            self.having.as_ref()
+        }
     }
 }
